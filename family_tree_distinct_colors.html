@@ -1,0 +1,237 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ancestor Tree</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 0; text-align:center;}
+    h2 { margin: 15px 0 5px 0; font-size: 20px; }
+    h4 { margin: 0 0 15px 0; font-size: 14px; color: #555; font-weight: normal; }
+    .node rect { stroke: #333; stroke-width: 1.5px; }
+    .node text { font: 12px sans-serif; pointer-events: none; fill: white; }
+    .legend { margin: 10px auto; padding: 10px; background: #fff; border: 1px solid #ccc; border-radius: 6px; display:inline-block; }
+    .legend-item { display: inline-flex; align-items: center; margin-right: 12px; }
+    .legend-color { width: 20px; height: 20px; margin-right: 6px; border-radius: 3px; }
+    #controls { margin: 10px; }
+    #searchBar { margin: 10px; padding: 8px; width: 300px; }
+    .highlight rect { stroke: red; stroke-width: 3px; }
+    button { margin: 2px; padding: 6px 10px; border: none; border-radius: 4px; background: #444; color: white; cursor: pointer; }
+    button:hover { background: #666; }
+    #tooltip { position: absolute; padding: 6px 10px; background: rgba(0,0,0,0.8); color: #fff; border-radius: 4px; font-size: 12px; pointer-events: none; display:none; text-align:left; }
+  </style>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <h2>Shree Mathur Chaturvedi Pachghara Mishr Family Tree, Sikandarpur Khas, Farukhabad</h2>
+  <h4>Credits: Prabhat Chaturvedi, Gomti Nagar Extension, Lucknow</h4>
+
+  <div id="controls">
+    <input type="text" id="searchBar" placeholder="Search by name or ID...">
+    <button onclick="searchNode()">Search</button>
+    <button onclick="expandAll()">Expand All</button>
+    <button onclick="collapseAll()">Collapse All</button>
+    <button onclick="resetView()">Reset</button>
+    <button onclick="zoomIn()">Zoom In</button>
+    <button onclick="zoomOut()">Zoom Out</button>
+  </div>
+
+  <div id="legend" class="legend"></div>
+  <svg width="100%" height="900"></svg>
+  <div id="tooltip"></div>
+
+  <script>
+    const data = [{"id": "1", "name": "Shriman Than Mishra"}, {"id": "2", "name": "Gange", "parentId": "1"}, {"id": "3", "name": "Chande", "parentId": "1"}, {"id": "4", "name": "Mathure Rai", "parentId": "1"}, {"id": "5", "name": "Hari Shankar", "parentId": "3"}, {"id": "6", "name": "Chintamani", "parentId": "3"}, {"id": "7", "name": "Kapoor Chand", "parentId": "3"}, {"id": "8", "name": "Kulmani", "parentId": "3"}, {"id": "9", "name": "Chaturbhuj", "parentId": "6"}, {"id": "10", "name": "Chhabeele Rai", "parentId": "6"}, {"id": "11", "name": "Shambhu Nath", "parentId": "10"}, {"id": "12", "name": "Jagat Mani", "parentId": "10"}, {"id": "13", "name": "Birbal", "parentId": "10"}, {"id": "14", "name": "Har roop Rai", "parentId": "11"}, {"id": "15", "name": "Pop Singh (Premraj)", "parentId": "14"}, {"id": "16", "name": "Chhadami lal", "parentId": "14"}, {"id": "17", "name": "Lajjaram", "parentId": "15"}, {"id": "18", "name": "TaraChandra (Parvar wale baba)", "parentId": "17"}, {"id": "19", "name": "Harvansh Rai", "parentId": "17"}, {"id": "20", "name": "Ram lal", "parentId": "19"}, {"id": "21", "name": "Daulat Ram", "parentId": "20"}, {"id": "22", "name": "Narottam Das", "parentId": "20"}, {"id": "23", "name": "Guljari Lal", "parentId": "20"}, {"id": "24", "name": "Genda Lal", "parentId": "20"}, {"id": "25", "name": "Seva ram", "parentId": "22"}, {"id": "26", "name": "Hukum Chand (Adopted)", "parentId": "25"}, {"id": "27", "name": "Narmada (Bhind)", "parentId": "25"}, {"id": "28", "name": "Susheel", "parentId": "25"}, {"id": "29", "name": "Mridula (Harda)", "parentId": "25"}, {"id": "30", "name": "Pramod", "parentId": "25"}, {"id": "31", "name": "Hriday", "parentId": "25"}, {"id": "32", "name": "Aditya", "parentId": "28"}, {"id": "33", "name": "Anand", "parentId": "28"}, {"id": "34", "name": "Varsha", "parentId": "30"}, {"id": "35", "name": "Ankit", "parentId": "30"}, {"id": "36", "name": "Akansha", "parentId": "31"}, {"id": "37", "name": "Arshi", "parentId": "31"}, {"id": "38", "name": "Aman", "parentId": "31"}, {"id": "39", "name": "Nandini", "parentId": "33"}, {"id": "40", "name": "Radhika", "parentId": "33"}, {"id": "41", "name": "Chokhelal", "parentId": "17"}, {"id": "42", "name": "Shyam Lal", "parentId": "41"}, {"id": "43", "name": "Vasudev", "parentId": "41"}, {"id": "44", "name": "Harprasad", "parentId": "42"}, {"id": "45", "name": "Pransukh", "parentId": "42"}, {"id": "46", "name": "Brijlal", "parentId": "42"}, {"id": "47", "name": "Lalman", "parentId": "44"}, {"id": "48", "name": "Chhakkan lal", "parentId": "44"}, {"id": "49", "name": "Yatindra Nath (Laadli)", "parentId": "47"}, {"id": "50", "name": "Bhanu Dutt", "parentId": "47"}, {"id": "51", "name": "Vinodi Lal", "parentId": "47"}, {"id": "52", "name": "Neeraj", "parentId": "50"}, {"id": "53", "name": "Kishan Kant", "parentId": "50"}, {"id": "54", "name": "Namrata", "parentId": "53"}, {"id": "55", "name": "Mohit", "parentId": "53"}, {"id": "56", "name": "Sanjay", "parentId": "51"}, {"id": "57", "name": "Chandra Shekhar", "parentId": "51"}, {"id": "58", "name": "Nikki", "parentId": "57"}, {"id": "211", "name": "Prabal", "parentId": "49"}, {"id": "59", "name": "Prachi", "parentId": "49"}, {"id": "60", "name": "Padam Kant", "parentId": "48"}, {"id": "61", "name": "Dinkar", "parentId": "48"}, {"id": "62", "name": "Naveen", "parentId": "48"}, {"id": "63", "name": "Devesh", "parentId": "60"}, {"id": "64", "name": "Ranjana", "parentId": "60"}, {"id": "65", "name": "Praful", "parentId": "60"}, {"id": "66", "name": "Garima", "parentId": "62"}, {"id": "67", "name": "Gaurav", "parentId": "62"}, {"id": "68", "name": "Lakhpat Rai", "parentId": "44"}, {"id": "69", "name": "Bhimsen", "parentId": "44"}, {"id": "70", "name": "Ambika Prasad", "parentId": "44"}, {"id": "71", "name": "Mayank", "parentId": "72"}, {"id": "72", "name": "Nripendra", "parentId": "68"}, {"id": "73", "name": "Neha", "parentId": "72"}, {"id": "74", "name": "Deepak", "parentId": "69"}, {"id": "75", "name": "Nagendra", "parentId": "69"}, {"id": "76", "name": "Swati", "parentId": "75"}, {"id": "77", "name": "Shweta", "parentId": "75"}, {"id": "78", "name": "Sachin", "parentId": "75"}, {"id": "79", "name": "Saurabh", "parentId": "75"}, {"id": "80", "name": "Prakhar", "parentId": "74"}, {"id": "81", "name": "Pragya", "parentId": "74"}, {"id": "82", "name": "Shubham", "parentId": "70"}, {"id": "83", "name": "Vipin", "parentId": "70"}, {"id": "84", "name": "Angan Lal", "parentId": "43"}, {"id": "85", "name": "Har Dayal", "parentId": "43"}, {"id": "86", "name": "Sohan Lal", "parentId": "43"}, {"id": "87", "name": "JhhauLal", "parentId": "17"}, {"id": "88", "name": "RatanLal", "parentId": "17"}, {"id": "89", "name": "Mihi Lal", "parentId": "86"}, {"id": "90", "name": "Roshan Lal", "parentId": "86"}, {"id": "91", "name": "Devi Dayal", "parentId": "86"}, {"id": "92", "name": "Suresh Chandra (DadaBhai)", "parentId": "91"}, {"id": "93", "name": "Pradeep", "parentId": "92"}, {"id": "94", "name": "Giriraj", "parentId": "91"}, {"id": "95", "name": "Rashmi (Chandrapur)", "parentId": "91"}, {"id": "96", "name": "Gajendra (Icchu)", "parentId": "91"}, {"id": "97", "name": "Beena (Pura)", "parentId": "91"}, {"id": "98", "name": "Hemraj", "parentId": "86"}, {"id": "99", "name": "Nupur", "parentId": "92"}, {"id": "100", "name": "Neeraj", "parentId": "92"}, {"id": "101", "name": "Prakash", "parentId": "92"}, {"id": "102", "name": "Prabhat", "parentId": "92"}, {"id": "103", "name": "Parul", "parentId": "93"}, {"id": "104", "name": "Priyank", "parentId": "93"}, {"id": "105", "name": "Pranay", "parentId": "102"}, {"id": "106", "name": "Prateek", "parentId": "102"}, {"id": "107", "name": "Parv", "parentId": "104"}, {"id": "108", "name": "Prabhav", "parentId": "104"}, {"id": "109", "name": "Pragyan", "parentId": "105"}, {"id": "110", "name": "Prachit", "parentId": "106"}, {"id": "111", "name": "Prashasti", "parentId": "101"}, {"id": "112", "name": "Pratyush", "parentId": "101"}, {"id": "113", "name": "Nittish", "parentId": "100"}, {"id": "114", "name": "Nikita", "parentId": "100"}, {"id": "115", "name": "Rohit", "parentId": "94"}, {"id": "116", "name": "Smita", "parentId": "94"}, {"id": "117", "name": "Mohit", "parentId": "94"}, {"id": "118", "name": "Preeti", "parentId": "96"}, {"id": "119", "name": "Sandeep", "parentId": "96"}, {"id": "212", "name": "Dharmendra", "parentId": "96"}, {"id": "120", "name": "Shekhar", "parentId": "96"}, {"id": "121", "name": "Shalini", "parentId": "96"}, {"id": "122", "name": "Prakhar", "parentId": "120"}, {"id": "123", "name": "Pulkita", "parentId": "120"}, {"id": "124", "name": "Manju (Nagpur)", "parentId": "90"}, {"id": "125", "name": "Kailash Chandra", "parentId": "90"}, {"id": "126", "name": "Nimisha", "parentId": "125"}, {"id": "127", "name": "Deepti", "parentId": "125"}, {"id": "128", "name": "Ashwini", "parentId": "125"}, {"id": "129", "name": "Kanti (Jahangirpur)", "parentId": "89"}, {"id": "130", "name": "Shanti", "parentId": "89"}, {"id": "131", "name": "Pushpa (Holipura)", "parentId": "89"}, {"id": "132", "name": "Neeru (Aligarh)", "parentId": "89"}, {"id": "133", "name": "Rajni (Bharatpur)", "parentId": "89"}, {"id": "134", "name": "Lokendra", "parentId": "89"}, {"id": "135", "name": "Laxmi (Holipura)", "parentId": "89"}, {"id": "136", "name": "Nitin", "parentId": "134"}, {"id": "137", "name": "Atul", "parentId": "89"}, {"id": "138", "name": "Naina", "parentId": "137"}, {"id": "139", "name": "Nakul", "parentId": "137"}, {"id": "140", "name": "Abhilasha", "parentId": "98"}, {"id": "141", "name": "Asha", "parentId": "98"}, {"id": "142", "name": "Vinay", "parentId": "98"}, {"id": "143", "name": "Bharat", "parentId": "98"}, {"id": "144", "name": "Shobha", "parentId": "98"}, {"id": "145", "name": "Mayank", "parentId": "143"}, {"id": "146", "name": "Abha", "parentId": "143"}, {"id": "147", "name": "Megha", "parentId": "142"}, {"id": "148", "name": "Saurabh", "parentId": "142"}, {"id": "149", "name": "Gaurav", "parentId": "142"}, {"id": "150", "name": "Kishori (Pura)", "parentId": "85"}, {"id": "151", "name": "Laltu", "parentId": "85"}, {"id": "152", "name": "Narayan Lal", "parentId": "87"}, {"id": "153", "name": "Totaram", "parentId": "87"}, {"id": "154", "name": "Damodar", "parentId": "153"}, {"id": "155", "name": "Vishweshwar Dayal", "parentId": "152"}, {"id": "156", "name": "Mukund Lal", "parentId": "152"}, {"id": "157", "name": "Chhavi Nath", "parentId": "156"}, {"id": "158", "name": "Mukta Prasad", "parentId": "156"}, {"id": "159", "name": "Bhuvnesh", "parentId": "158"}, {"id": "160", "name": "Mukesh", "parentId": "158"}, {"id": "161", "name": "Hemant", "parentId": "158"}, {"id": "162", "name": "Ankit", "parentId": "161"}, {"id": "163", "name": "Neha", "parentId": "161"}, {"id": "164", "name": "Shubha", "parentId": "161"}, {"id": "213", "name": "Kunwar Sen", "parentId": "155"}, {"id": "165", "name": "Ram Chandra", "parentId": "155"}, {"id": "166", "name": "Jwala Prasad", "parentId": "165"}, {"id": "167", "name": "Dinesh Chandra", "parentId": "165"}, {"id": "168", "name": "Dileep", "parentId": "166"}, {"id": "169", "name": "Rajeev", "parentId": "166"}, {"id": "170", "name": "Santosh", "parentId": "167"}, {"id": "171", "name": "Manjul", "parentId": "167"}, {"id": "172", "name": "Ramkiran", "parentId": "88"}, {"id": "173", "name": "Manohar Lal", "parentId": "172"}, {"id": "174", "name": "Nanna Mal", "parentId": "172"}, {"id": "175", "name": "Sangam Lal", "parentId": "172"}, {"id": "176", "name": "Ranglal", "parentId": "172"}, {"id": "177", "name": "Gappu", "parentId": "172"}, {"id": "178", "name": "Pyarelal", "parentId": "175"}, {"id": "179", "name": "Madhusudan", "parentId": "175"}, {"id": "180", "name": "Mahesh", "parentId": "179"}, {"id": "181", "name": "Dhanesh", "parentId": "179"}, {"id": "182", "name": "Yogendra", "parentId": "179"}, {"id": "183", "name": "Chironjilal", "parentId": "174"}, {"id": "184", "name": "Piyush", "parentId": "182"}, {"id": "185", "name": "Arun", "parentId": "182"}, {"id": "186", "name": "Manoj", "parentId": "182"}, {"id": "187", "name": "Ashok", "parentId": "182"}, {"id": "188", "name": "Mala", "parentId": "186"}, {"id": "189", "name": "Nupur", "parentId": "186"}, {"id": "190", "name": "Avnika", "parentId": "185"}, {"id": "191", "name": "Akansha", "parentId": "185"}, {"id": "192", "name": "Anmol", "parentId": "185"}, {"id": "193", "name": "Vikas", "parentId": "181"}, {"id": "194", "name": "Dinendra", "parentId": "181"}, {"id": "195", "name": "Dhirendra", "parentId": "181"}, {"id": "196", "name": "Chandra Shekhar", "parentId": "180"}, {"id": "197", "name": "Amarnath", "parentId": "173"}, {"id": "198", "name": "Chhanu Lal", "parentId": "173"}, {"id": "199", "name": "Murlidhar", "parentId": "173"}, {"id": "200", "name": "Jatindra", "parentId": "199"}, {"id": "201", "name": "Bhupenu", "parentId": "199"}, {"id": "202", "name": "Kusum Kant", "parentId": "197"}, {"id": "203", "name": "Prashant", "parentId": "202"}, {"id": "204", "name": "Pravesh", "parentId": "202"}, {"id": "205", "name": "Madhur Kant", "parentId": "198"}, {"id": "206", "name": "Girija Shankar", "parentId": "198"}, {"id": "207", "name": "Gopesh", "parentId": "198"}, {"id": "208", "name": "Upendra", "parentId": "198"}, {"id": "209", "name": "Pankaj", "parentId": "207"}, {"id": "210", "name": "Sunil", "parentId": "208"}];
+
+    function buildHierarchy(data) {
+      let map = new Map();
+      data.forEach(d => map.set(d.id, Object.assign({children:[]}, d)));
+      let root = map.get("1") || map.get(1);
+      data.forEach(d => {
+        if (d.parentId) {
+          const parent = map.get(d.parentId);
+          if (parent) parent.children.push(map.get(d.id));
+        }
+      });
+      return root;
+    }
+
+    const rootData = buildHierarchy(data);
+    const root = d3.hierarchy(rootData);
+
+    const svg = d3.select("svg"),
+          g = svg.append("g").attr("transform", "translate(50,50)");
+
+    const dx = 200, dy = 160;
+    const tree = d3.tree().nodeSize([dx, dy]);
+    root.x0 = 0; root.y0 = 0;
+
+    const tooltip = d3.select("#tooltip");
+
+    function collapse(d) {
+      if (d.children) {
+        d._children = d.children;
+        d._children.forEach(collapse);
+        d.children = null;
+      }
+    }
+    if(root.children) root.children.forEach(collapse);
+    update(root);
+
+    function wrapText(text, width) {
+      text.each(function(d) {
+        let text = d3.select(this),
+            words = text.text().split(/\s+/).reverse(),
+            word,
+            line = [],
+            lineNumber = 0,
+            lineHeight = 1.1,
+            y = 0,
+            dy = 0,
+            tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+        while (word = words.pop()) {
+          line.push(word);
+          tspan.text(line.join(" "));
+          if (tspan.node().getComputedTextLength() > width - 10) {
+            line.pop();
+            tspan.text(line.join(" "));
+            line = [word];
+            tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+          }
+        }
+        d.lineCount = lineNumber + 1;
+      });
+    }
+
+    function update(source) {
+      const nodes = root.descendants();
+      const links = root.links();
+      tree(root);
+
+      nodes.forEach(d => d.y = d.depth * dy);
+
+      // distinct categorical palette, fallback rainbow if more
+      const baseColors = [
+        "#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd",
+        "#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf",
+        "#393b79","#637939","#8c6d31","#843c39","#7b4173",
+        "#5254a3","#8ca252","#bd9e39","#ad494a","#a55194"
+      ];
+      const maxDepth = d3.max(nodes, d => d.depth);
+      const color = d3.scaleOrdinal()
+        .domain(d3.range(maxDepth+1))
+        .range(d3.range(maxDepth+1).map(i => baseColors[i % baseColors.length] || d3.hsl(i * 360/(maxDepth+1), 0.6, 0.5)));
+
+      const legend = d3.select("#legend").html("");
+      for (let i = 0; i <= maxDepth; i++) {
+        legend.append("div").attr("class", "legend-item")
+          .html("<div class='legend-color' style='background:" + color(i) + "'></div>Generation " + i);
+      }
+
+      const node = g.selectAll("g.node").data(nodes, d => d.data.id);
+      const nodeEnter = node.enter().append("g")
+        .attr("class", "node")
+        .attr("transform", "translate(" + source.x0 + "," + source.y0 + ")")
+        .on("click", (event, d) => {
+          if (d.children) {
+            d._children = d.children;
+            d.children = null;
+          } else if (d._children) {
+            d.children = d._children;
+            d._children = null;
+          }
+          update(d);
+        })
+        .on("mousemove", (event, d) => {
+          const parentName = d.parent ? d.parent.data.name : "No parent";
+          tooltip.style("display", "block")
+                 .style("left", (event.pageX + 10) + "px")
+                 .style("top", (event.pageY + 10) + "px")
+                 .html("<b>Name:</b> " + d.data.name + "<br/>" +
+                       "<b>Parent:</b> " + parentName + "<br/>" +
+                       "<b>Generation:</b> " + d.depth);
+        })
+        .on("mouseout", () => tooltip.style("display", "none"));
+
+      nodeEnter.append("rect")
+        .attr("x", -80).attr("y", -20)
+        .attr("width", 160).attr("height", 40)
+        .attr("rx", 6).attr("ry", 6)
+        .attr("fill", d => color(d.depth));
+
+      nodeEnter.append("text")
+        .attr("text-anchor", "middle")
+        .style("font-size", "12px")
+        .text(d => d.data.name)
+        .call(wrapText, 150);
+
+      const nodeUpdate = nodeEnter.merge(node);
+      nodeUpdate.select("rect")
+        .attr("height", d => (d.lineCount ? d.lineCount * 14 + 10 : 40))
+        .attr("y", d => -(d.lineCount ? (d.lineCount * 14 + 10)/2 : 20));
+
+      nodeUpdate.transition().duration(500)
+        .attr("transform", d => "translate(" + d.x + "," + d.y + ")");
+
+      node.exit().transition().duration(500).remove();
+
+      const link = g.selectAll("path.link").data(links, d => d.target.data.id);
+      const linkEnter = link.enter().insert("path", "g")
+        .attr("class", "link")
+        .attr("fill", "none")
+        .attr("stroke", "#555")
+        .attr("stroke-width", 1.5)
+        .attr("d", d => `M${d.source.x},${d.source.y + (d.source.lineCount? d.source.lineCount*7+5:20)}
+                        V${d.target.y - (d.target.lineCount? d.target.lineCount*7+5:20)}
+                        H${d.target.x}`);
+
+      link.merge(linkEnter).transition().duration(500)
+        .attr("d", d => `M${d.source.x},${d.source.y + (d.source.lineCount? d.source.lineCount*7+5:20)}
+                        V${d.target.y - (d.target.lineCount? d.target.lineCount*7+5:20)}
+                        H${d.target.x}`);
+
+      link.exit().transition().duration(500).remove();
+
+      nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
+    }
+
+    function expandAll() {
+      root.each(d => { if (d._children) { d.children = d._children; d._children = null; } });
+      update(root);
+    }
+    function collapseAll() {
+      if(root.children) root.children.forEach(collapse);
+      update(root);
+    }
+    function resetView() {
+      svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity.translate(window.innerWidth/2, 50).scale(0.7));
+    }
+
+    function searchNode() {
+      const term = document.getElementById("searchBar").value.toLowerCase();
+      if (!term) return;
+      g.selectAll("g.node").classed("highlight", d =>
+        d.data.name.toLowerCase().includes(term) || (d.data.id && d.data.id.toString() === term)
+      );
+      const match = root.descendants().find(d =>
+        d.data.name.toLowerCase().includes(term) || (d.data.id && d.data.id.toString() === term)
+      );
+      if (match) {
+        const scale = 0.9;
+        const x = window.innerWidth/2 - match.x * scale;
+        const y = window.innerHeight/2 - match.y * scale;
+        const transform = d3.zoomIdentity.translate(x, y).scale(scale);
+        svg.transition().duration(750).call(zoom.transform, transform);
+      }
+    }
+
+    const zoom = d3.zoom().scaleExtent([0.2, 3]).on("zoom", (event) => g.attr("transform", event.transform));
+    svg.call(zoom);
+
+    function zoomIn() { svg.transition().call(zoom.scaleBy, 1.2); }
+    function zoomOut() { svg.transition().call(zoom.scaleBy, 0.8); }
+
+    resetView();
+  </script>
+</body>
+</html>
